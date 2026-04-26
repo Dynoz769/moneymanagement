@@ -1,37 +1,1801 @@
-const CACHE_NAME = "moneyflow-pwa-v1";
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MoneyFlow Dashboard</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#0f8f62" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="MoneyFlow" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-const FILES_TO_CACHE = [
-  "./",
-  "./index.html",
-  "./manifest.webmanifest"
-];
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: Inter, Arial, sans-serif;
+    }
 
-self.addEventListener("install", event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(FILES_TO_CACHE))
-  );
-  self.skipWaiting();
-});
+    :root {
+      --bg: #f3f7f5;
+      --white: #ffffff;
+      --text: #12372a;
+      --muted: #7c8f86;
+      --line: #e6eee9;
+      --green: #0f8f62;
+      --green-dark: #07563d;
+      --green-soft: #e8f8f1;
+      --blue: #4f7cff;
+      --blue-soft: #eef3ff;
+      --orange: #f5a342;
+      --orange-soft: #fff4e5;
+      --purple: #8b5cf6;
+      --purple-soft: #f3efff;
+      --red: #ef4444;
+      --red-soft: #fff0f0;
+      --shadow: 0 20px 60px rgba(18, 55, 42, 0.08);
+      --shadow-small: 0 10px 30px rgba(18, 55, 42, 0.06);
+    }
 
-self.addEventListener("activate", event => {
-  event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys.map(key => {
-          if (key !== CACHE_NAME) {
-            return caches.delete(key);
-          }
-        })
-      )
-    )
-  );
-  self.clients.claim();
-});
+    body {
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(15, 143, 98, 0.16), transparent 32%),
+        radial-gradient(circle at bottom right, rgba(79, 124, 255, 0.12), transparent 35%),
+        var(--bg);
+      color: var(--text);
+      padding: 26px;
+    }
 
-self.addEventListener("fetch", event => {
-  event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
-  );
-});
+    .app {
+      max-width: 1380px;
+      margin: auto;
+      min-height: calc(100vh - 52px);
+      display: grid;
+      grid-template-columns: 265px 1fr;
+      background: rgba(255, 255, 255, 0.82);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      border-radius: 34px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      backdrop-filter: blur(20px);
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, #ffffff, #f8fbf9);
+      border-right: 1px solid var(--line);
+      padding: 28px 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 30px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 34px;
+      padding: 0 8px;
+    }
+
+    .brand-logo {
+      width: 46px;
+      height: 46px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, var(--green), #3dd598);
+      color: white;
+      display: grid;
+      place-items: center;
+      font-size: 22px;
+      box-shadow: 0 12px 24px rgba(15, 143, 98, 0.24);
+    }
+
+    .brand h2 {
+      font-size: 21px;
+      font-weight: 900;
+      letter-spacing: -0.7px;
+      color: var(--green-dark);
+    }
+
+    .brand span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 1px;
+      font-weight: 600;
+    }
+
+    .menu-group {
+      margin-bottom: 26px;
+    }
+
+    .menu-title {
+      font-size: 11px;
+      font-weight: 900;
+      color: #a6b5ae;
+      text-transform: uppercase;
+      letter-spacing: 0.9px;
+      margin: 0 0 10px 14px;
+    }
+
+    .menu-item {
+      width: 100%;
+      border: none;
+      background: transparent;
+      color: #6f8279;
+      font-size: 14px;
+      font-weight: 800;
+      padding: 13px 14px;
+      border-radius: 16px;
+      margin-bottom: 7px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+      transition: 0.22s ease;
+      text-align: left;
+    }
+
+    .menu-item:hover,
+    .menu-item.active {
+      background: var(--green-soft);
+      color: var(--green-dark);
+      transform: translateX(2px);
+    }
+
+    .menu-item .icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 11px;
+      background: #f0f5f2;
+      display: grid;
+      place-items: center;
+      font-size: 15px;
+    }
+
+    .menu-item.active .icon,
+    .menu-item:hover .icon {
+      background: #d7f0e5;
+    }
+
+    .profile {
+      background: linear-gradient(135deg, var(--green-dark), var(--green));
+      color: white;
+      border-radius: 24px;
+      padding: 18px;
+      box-shadow: 0 14px 28px rgba(7, 86, 61, 0.18);
+    }
+
+    .profile-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+
+    .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+    }
+
+    .profile strong {
+      font-size: 14px;
+      display: block;
+    }
+
+    .profile span {
+      font-size: 12px;
+      opacity: 0.82;
+    }
+
+    .profile-note {
+      font-size: 12px;
+      line-height: 1.5;
+      opacity: 0.86;
+    }
+
+    .content {
+      padding: 34px;
+      overflow-x: hidden;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 26px;
+      flex-wrap: wrap;
+    }
+
+    .heading h1 {
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--green-dark);
+      letter-spacing: -1px;
+    }
+
+    .heading p {
+      color: var(--muted);
+      font-size: 14px;
+      margin-top: 6px;
+      font-weight: 600;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .pill {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 12px 16px;
+      font-size: 13px;
+      color: var(--muted);
+      font-weight: 800;
+      box-shadow: var(--shadow-small);
+    }
+
+    .btn {
+      border: none;
+      border-radius: 16px;
+      padding: 13px 17px;
+      font-weight: 900;
+      cursor: pointer;
+      transition: 0.22s;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--green), #38c993);
+      color: white;
+      box-shadow: 0 12px 26px rgba(15, 143, 98, 0.24);
+    }
+
+    .btn-primary:hover,
+    .btn-secondary:hover,
+    .btn-danger:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn-secondary {
+      background: var(--white);
+      color: var(--green-dark);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow-small);
+    }
+
+    .btn-danger {
+      background: var(--red);
+      color: white;
+    }
+
+    .page {
+      display: none;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 18px;
+      margin-bottom: 22px;
+    }
+
+    .stat-card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      padding: 22px;
+      box-shadow: var(--shadow-small);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .stat-card::after {
+      content: "";
+      position: absolute;
+      width: 105px;
+      height: 105px;
+      border-radius: 50%;
+      right: -38px;
+      top: -38px;
+      background: var(--green-soft);
+    }
+
+    .stat-card.blue::after { background: var(--blue-soft); }
+    .stat-card.orange::after { background: var(--orange-soft); }
+    .stat-card.purple::after { background: var(--purple-soft); }
+    .stat-card.red::after { background: var(--red-soft); }
+
+    .stat-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .stat-icon {
+      width: 43px;
+      height: 43px;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+      font-size: 19px;
+      background: var(--green-soft);
+    }
+
+    .stat-card.blue .stat-icon { background: var(--blue-soft); }
+    .stat-card.orange .stat-icon { background: var(--orange-soft); }
+    .stat-card.purple .stat-icon { background: var(--purple-soft); }
+    .stat-card.red .stat-icon { background: var(--red-soft); }
+
+    .stat-change {
+      font-size: 12px;
+      color: var(--green);
+      font-weight: 900;
+      background: var(--green-soft);
+      padding: 6px 9px;
+      border-radius: 999px;
+    }
+
+    .stat-change.bad {
+      color: var(--red);
+      background: var(--red-soft);
+    }
+
+    .stat-label {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      position: relative;
+      z-index: 2;
+    }
+
+    .stat-value {
+      font-size: 27px;
+      font-weight: 900;
+      letter-spacing: -0.8px;
+      color: var(--green-dark);
+      position: relative;
+      z-index: 2;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1.35fr 0.65fr;
+      gap: 22px;
+      margin-bottom: 22px;
+    }
+
+    .panel {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      padding: 24px;
+      box-shadow: var(--shadow-small);
+    }
+
+    .panel-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+
+    .panel h2 {
+      font-size: 21px;
+      color: var(--green-dark);
+      font-weight: 900;
+      letter-spacing: -0.5px;
+    }
+
+    .legend {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 6px;
+    }
+
+    .dot.green { background: var(--green); }
+    .dot.blue { background: var(--blue); }
+    .dot.orange { background: var(--orange); }
+    .dot.purple { background: var(--purple); }
+    .dot.red { background: var(--red); }
+
+    .bar-chart {
+      height: 285px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-around;
+      gap: 20px;
+      padding: 24px 12px 0;
+      border-radius: 22px;
+      background: repeating-linear-gradient(to top, #f8fbf9 0, #f8fbf9 54px, #edf3ef 55px);
+      border: 1px solid #edf3ef;
+    }
+
+    .bar-group {
+      height: 100%;
+      flex: 1;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 9px;
+      position: relative;
+      min-width: 70px;
+    }
+
+    .bar {
+      width: 22px;
+      min-height: 10px;
+      border-radius: 12px 12px 0 0;
+      transition: 0.3s;
+    }
+
+    .bar.monthly {
+      background: linear-gradient(to top, #4f7cff, #92a8ff);
+    }
+
+    .bar.weekly {
+      background: linear-gradient(to top, #f5a342, #ffc46f);
+    }
+
+    .bar-label {
+      position: absolute;
+      bottom: -27px;
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 900;
+      text-align: center;
+      width: 100px;
+    }
+
+    .chart-note {
+      margin-top: 38px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.6;
+      font-weight: 600;
+    }
+
+    .donut-wrap {
+      display: grid;
+      place-items: center;
+      gap: 18px;
+    }
+
+    .donut {
+      width: 205px;
+      height: 205px;
+      border-radius: 50%;
+      position: relative;
+      background: conic-gradient(var(--green) 0 60%, var(--blue) 60% 80%, var(--orange) 80% 95%, var(--purple) 95% 100%);
+      box-shadow: inset 0 0 0 1px rgba(255,255,255,0.6);
+    }
+
+    .donut::after {
+      content: "";
+      position: absolute;
+      inset: 52px;
+      border-radius: 50%;
+      background: var(--white);
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+
+    .donut-center {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      z-index: 2;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .donut-center strong {
+      display: block;
+      font-size: 22px;
+      color: var(--green-dark);
+      font-weight: 900;
+    }
+
+    .donut-center span {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .category-list {
+      width: 100%;
+      display: grid;
+      gap: 10px;
+    }
+
+    .category-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      align-items: center;
+      padding: 11px 12px;
+      border-radius: 14px;
+      background: #f8fbf9;
+      color: var(--text);
+      font-size: 13px;
+      font-weight: 900;
+    }
+
+    .bottom-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 22px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 0.8fr 1.2fr;
+      gap: 22px;
+    }
+
+    .form-card {
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      padding: 24px;
+      box-shadow: var(--shadow-small);
+    }
+
+    .form-card h2 {
+      font-size: 22px;
+      color: var(--green-dark);
+      font-weight: 900;
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--green-dark);
+      font-weight: 900;
+      margin-bottom: 8px;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fbfdfc;
+      color: var(--text);
+      outline: none;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 15px;
+      transition: 0.2s;
+    }
+
+    input:focus,
+    select:focus,
+    textarea:focus {
+      border-color: var(--green);
+      box-shadow: 0 0 0 4px var(--green-soft);
+      background: var(--white);
+    }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .notice,
+    .warning {
+      margin-top: 14px;
+      padding: 14px;
+      border-radius: 18px;
+      font-size: 13px;
+      line-height: 1.6;
+      font-weight: 700;
+    }
+
+    .notice {
+      background: var(--green-soft);
+      color: var(--green-dark);
+      border: 1px solid #cfecdf;
+    }
+
+    .warning {
+      background: var(--red-soft);
+      color: #b83232;
+      border: 1px solid #ffd3d3;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.6;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th,
+    td {
+      text-align: left;
+      padding: 13px 12px;
+      border-bottom: 1px solid var(--line);
+      font-size: 13px;
+      color: var(--text);
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-weight: 900;
+      background: #f9fbfa;
+    }
+
+    .mini-btn {
+      border: none;
+      border-radius: 12px;
+      background: var(--red-soft);
+      color: var(--red);
+      padding: 8px 10px;
+      font-size: 12px;
+      font-weight: 900;
+      cursor: pointer;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 14px;
+      background: #edf3ef;
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 12px 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--green), #3dd598);
+      width: 0;
+      transition: 0.3s;
+    }
+
+    .color-red { color: var(--red) !important; }
+    .color-blue { color: var(--blue) !important; }
+    .color-green { color: var(--green) !important; }
+    .color-orange { color: var(--orange) !important; }
+    .color-purple { color: var(--purple) !important; }
+
+    .trade-result-card {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .trade-mini-card {
+      background: #f8fbf9;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .trade-mini-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+
+    .trade-mini-card strong {
+      font-size: 19px;
+      font-weight: 900;
+      color: var(--green-dark);
+    }
+
+    .profit-badge,
+    .loss-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 900;
+    }
+
+    .profit-badge {
+      background: var(--green-soft);
+      color: var(--green);
+    }
+
+    .loss-badge {
+      background: var(--red-soft);
+      color: var(--red);
+    }
+
+    @media (max-width: 1150px) {
+      body { padding: 14px; }
+
+      .app {
+        grid-template-columns: 1fr;
+        border-radius: 24px;
+      }
+
+      .sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .menu-item {
+        display: inline-flex;
+        width: auto;
+        margin-right: 7px;
+      }
+
+      .menu-group {
+        margin-bottom: 14px;
+      }
+
+      .stats-grid,
+      .main-grid,
+      .bottom-grid,
+      .form-grid,
+      .trade-result-card {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .content { padding: 22px 16px; }
+      .heading h1 { font-size: 25px; }
+      .stat-value { font-size: 23px; }
+      .bar-chart { overflow-x: auto; justify-content: flex-start; }
+      .bar-group { min-width: 100px; }
+      .btn-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div>
+        <div class="brand">
+          <div class="brand-logo">₿</div>
+          <div>
+            <h2>MoneyFlow</h2>
+            <span>Personal Finance</span>
+          </div>
+        </div>
+
+        <div class="menu-group">
+          <div class="menu-title">Overview</div>
+          <button class="menu-item active" onclick="showPage('dashboard', this)"><span class="icon">▦</span>Dashboard</button>
+          <button class="menu-item" onclick="showPage('budget', this)"><span class="icon">💵</span>Budget Planner</button>
+          <button class="menu-item" onclick="showPage('expense', this)"><span class="icon">🧾</span>Expense Tracker</button>
+          <button class="menu-item" onclick="showPage('trading', this)"><span class="icon">📈</span>Trading Manager</button>
+          <button class="menu-item" onclick="showPage('saving', this)"><span class="icon">🏦</span>Saving Goal</button>
+        </div>
+
+        <div class="menu-group">
+          <div class="menu-title">Tools</div>
+          <button class="menu-item" onclick="resetBudgetOnly()"><span class="icon">↻</span>Reset Budget</button>
+        </div>
+      </div>
+
+      <div class="profile">
+        <div class="profile-top">
+          <div class="avatar">J</div>
+          <div>
+            <strong>Personal Account</strong>
+            <span>Money Dashboard</span>
+          </div>
+        </div>
+        <div class="profile-note">Track income, belanja, simpanan dan trading risk dalam satu dashboard.</div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <div class="topbar">
+        <div class="heading">
+          <h1 id="pageTitle">Dashboard</h1>
+          <p id="pageSubtitle">Overview duit, belanja, simpanan dan trading risk.</p>
+        </div>
+        <div class="top-actions">
+          <div class="pill">📅 This Month</div>
+          <div class="pill" id="dbStatus">🔥 Firebase: Setup Required</div>
+          <button class="btn btn-secondary" id="installAppBtn" style="display:none;" onclick="installPWA()">⬇ Install App</button>
+          <button class="btn btn-primary" onclick="goToExpense()">+ Add Expense</button>
+        </div>
+      </div>
+
+      <section id="dashboard" class="page active">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-top">
+              <div class="stat-icon">💵</div>
+              <div class="stat-change">Active</div>
+            </div>
+            <div class="stat-label">Total Income</div>
+            <div class="stat-value" id="dashIncome">RM0.00</div>
+          </div>
+
+          <div class="stat-card red">
+            <div class="stat-top">
+              <div class="stat-icon">🧾</div>
+              <div class="stat-change bad">Out</div>
+            </div>
+            <div class="stat-label">Total Expense</div>
+            <div class="stat-value color-red" id="dashExpense">RM0.00</div>
+          </div>
+
+          <div class="stat-card blue">
+            <div class="stat-top">
+              <div class="stat-icon">🏦</div>
+              <div class="stat-change">Safe</div>
+            </div>
+            <div class="stat-label">Saving Plan</div>
+            <div class="stat-value color-blue" id="dashSaving">RM0.00</div>
+          </div>
+
+          <div class="stat-card purple">
+            <div class="stat-top">
+              <div class="stat-icon">📊</div>
+              <div class="stat-change">Balance</div>
+            </div>
+            <div class="stat-label">Current Balance</div>
+            <div class="stat-value color-purple" id="dashBalance">RM0.00</div>
+          </div>
+
+          <div class="stat-card orange">
+            <div class="stat-top">
+              <div class="stat-icon">💹</div>
+              <div class="stat-change" id="dashTradingStatus">P/L</div>
+            </div>
+            <div class="stat-label">Trading P/L</div>
+            <div class="stat-value color-orange" id="dashTradingPL">$0.00</div>
+          </div>
+        </div>
+
+        <div class="main-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Budget Overview</h2>
+              <div class="legend">
+                <span><span class="dot blue"></span>Monthly</span>
+                <span><span class="dot orange"></span>Weekly</span>
+              </div>
+            </div>
+            <div id="budgetBarChart" class="bar-chart"></div>
+            <p class="chart-note">Graf ini tunjuk pecahan bajet mengikut kategori. Monthly ialah bajet penuh, weekly ialah pecahan seminggu.</p>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Budget Category</h2>
+              <div class="legend"><span><span class="dot green"></span>Plan</span></div>
+            </div>
+            <div class="donut-wrap">
+              <div id="categoryDonut" class="donut">
+                <div class="donut-center">
+                  <div>
+                    <strong id="donutIncome">RM0</strong>
+                    <span>Total Income</span>
+                  </div>
+                </div>
+              </div>
+              <div id="categoryList" class="category-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Recent Expenses</h2>
+              <button class="btn btn-secondary" onclick="goToExpense()">View All</button>
+            </div>
+            <div id="dashboardRecentExpense"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <h2>Trading Risk</h2>
+              <div class="legend"><span><span class="dot red"></span>Risk Control</span></div>
+            </div>
+            <div id="dashboardTrading"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="budget" class="page">
+        <div class="form-grid">
+          <div class="form-card">
+            <h2>Kira Bajet Gaji</h2>
+            <label for="income">Gaji / Income (RM)</label>
+            <input type="number" id="income" placeholder="Contoh: 250" />
+
+            <label for="incomeType">Jenis Income</label>
+            <select id="incomeType">
+              <option value="monthly">Bulanan</option>
+              <option value="weekly">Mingguan</option>
+            </select>
+
+            <label for="planType">Jenis Plan</label>
+            <select id="planType">
+              <option value="safe">Safe Plan - 60% Keperluan, 20% Simpanan, 15% Kehendak, 5% Trading</option>
+              <option value="balanced">Balanced Plan - 50% Keperluan, 20% Simpanan, 20% Kehendak, 10% Trading</option>
+              <option value="aggressive">Aggressive Plan - 45% Keperluan, 15% Simpanan, 20% Kehendak, 20% Trading</option>
+            </select>
+
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="saveBudget()">Simpan Bajet</button>
+              <button class="btn btn-secondary" onclick="resetBudgetOnly()">Reset Bajet</button>
+            </div>
+            <div class="notice">Untuk income RM250, Safe Plan lebih sesuai sebab simpanan dan keperluan lebih terjaga.</div>
+          </div>
+
+          <div class="form-card">
+            <h2>Result Bajet</h2>
+            <div id="budgetResult" class="muted">Masukkan income dan tekan Simpan Bajet.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="expense" class="page">
+        <div class="form-grid">
+          <div class="form-card">
+            <h2>Track Belanja Harian</h2>
+            <label for="expenseDate">Tarikh</label>
+            <input type="date" id="expenseDate" />
+
+            <label for="expenseCategory">Kategori</label>
+            <select id="expenseCategory">
+              <option value="Makan">Makan</option>
+              <option value="Minyak / Transport">Minyak / Transport</option>
+              <option value="Topup / Internet">Topup / Internet</option>
+              <option value="Kehendak">Kehendak</option>
+              <option value="Trading">Trading</option>
+              <option value="Lain-lain">Lain-lain</option>
+            </select>
+
+            <label for="expenseNote">Catatan</label>
+            <input type="text" id="expenseNote" placeholder="Contoh: Nasi ayam" />
+
+            <label for="expenseAmount">Jumlah (RM)</label>
+            <input type="number" id="expenseAmount" placeholder="Contoh: 7" />
+
+            <button class="btn btn-primary" style="width:100%;" onclick="addExpense()">Tambah Belanja</button>
+          </div>
+
+          <div class="form-card">
+            <h2>Ringkasan Belanja</h2>
+            <div id="expenseSummary"></div>
+            <button class="btn btn-danger" style="width:100%; margin-top:14px;" onclick="clearExpenses()">Padam Semua Belanja</button>
+          </div>
+
+          <div class="form-card" style="grid-column:1 / -1;">
+            <h2>Senarai Belanja</h2>
+            <div id="expenseList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section id="trading" class="page">
+        <div class="form-grid">
+          <div class="form-card">
+            <h2>Kira Risiko Trading</h2>
+            <label for="capital">Modal Trading (USD)</label>
+            <input type="number" id="capital" placeholder="Contoh: 50" />
+
+            <label for="riskPercent">Risk Setiap Trade (%)</label>
+            <select id="riskPercent">
+              <option value="1">1%</option>
+              <option value="2">2%</option>
+              <option value="3">3%</option>
+            </select>
+
+            <label for="maxTrade">Maximum Trade Sehari</label>
+            <input type="number" id="maxTrade" placeholder="Contoh: 3" />
+
+            <button class="btn btn-primary" style="width:100%;" onclick="saveTrading()">Simpan Trading Plan</button>
+            <div class="warning">Untuk modal kecil, paling selamat risk 1% setiap trade. Jangan guna duit makan atau duit komitmen untuk trading.</div>
+          </div>
+
+          <div class="form-card">
+            <h2>Result Trading Risk</h2>
+            <div id="tradingResult" class="muted">Masukkan modal trading dan tekan Simpan Trading Plan.</div>
+          </div>
+
+          <div class="form-card">
+            <h2>Kira Profit / Loss Trade</h2>
+
+            <label for="tradeDate">Tarikh Trade</label>
+            <input type="date" id="tradeDate" />
+
+            <label for="marketType">Jenis Market</label>
+            <select id="marketType">
+              <option value="xauusd">XAUUSD / Gold</option>
+              <option value="forex">Forex Major</option>
+              <option value="crypto">Crypto / Unit Based</option>
+            </select>
+
+            <label for="tradePair">Pair / Symbol</label>
+            <input type="text" id="tradePair" placeholder="Contoh: XAUUSD" />
+
+            <label for="tradeDirection">Type Trade</label>
+            <select id="tradeDirection">
+              <option value="Buy">Buy</option>
+              <option value="Sell">Sell</option>
+            </select>
+
+            <label for="entryPrice">Entry Price</label>
+            <input type="number" step="0.00001" id="entryPrice" placeholder="Contoh: 2350.50" />
+
+            <label for="exitPrice">Exit Price</label>
+            <input type="number" step="0.00001" id="exitPrice" placeholder="Contoh: 2355.50" />
+
+            <label for="lotSize">Lot Size</label>
+            <input type="number" step="0.01" id="lotSize" placeholder="Contoh: 0.01" />
+
+            <button class="btn btn-primary" style="width:100%;" onclick="addTrade()">Kira & Simpan Trade</button>
+            <div class="notice">
+              Formula XAUUSD: pergerakan harga × lot × 100. Forex Major: pips × lot × $10.
+            </div>
+          </div>
+
+          <div class="form-card">
+            <h2>Ringkasan Profit / Loss</h2>
+            <div id="tradeSummary" class="muted">Belum ada rekod trade.</div>
+            <button class="btn btn-danger" style="width:100%; margin-top:14px;" onclick="clearTrades()">Padam Semua Trade</button>
+          </div>
+
+          <div class="form-card" style="grid-column:1 / -1;">
+            <h2>Trade Journal USD</h2>
+            <div id="tradeList" class="muted">Belum ada rekod trade.</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="saving" class="page">
+        <div class="form-grid">
+          <div class="form-card">
+            <h2>Saving Goal</h2>
+            <label for="goalName">Nama Target</label>
+            <input type="text" id="goalName" placeholder="Contoh: Emergency Fund" />
+
+            <label for="goalTarget">Target Simpanan (RM)</label>
+            <input type="number" id="goalTarget" placeholder="Contoh: 500" />
+
+            <label for="goalCurrent">Simpanan Sekarang (RM)</label>
+            <input type="number" id="goalCurrent" placeholder="Contoh: 50" />
+
+            <button class="btn btn-primary" style="width:100%;" onclick="saveGoal()">Simpan Goal</button>
+          </div>
+
+          <div class="form-card">
+            <h2>Progress Simpanan</h2>
+            <div id="goalResult" class="muted">Masukkan saving goal untuk lihat progress.</div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCgU1KlqKh55IQKSnk-PpvafiEZkkIOK7A",
+      authDomain: "oneymanagement-ca1f9.firebaseapp.com",
+      projectId: "oneymanagement-ca1f9",
+      storageBucket: "oneymanagement-ca1f9.firebasestorage.app",
+      messagingSenderId: "975231245856",
+      appId: "1:975231245856:web:945f634bae6938a976a645",
+      measurementId: "G-088LZR58S4"
+    };
+
+    const USER_ID = "personal_account";
+    const DEFAULT_BUDGET = { income: 250, incomeType: "monthly", planType: "safe" };
+    const DEFAULT_TRADING = { capital: 50, riskPercent: 1, maxTrade: 3 };
+
+    let db = null;
+    let firebaseReady = false;
+
+    let storeCache = {
+      budget: DEFAULT_BUDGET,
+      trading: DEFAULT_TRADING,
+      expenses: [],
+      trades: [],
+      goal: null
+    };
+
+    let deferredPrompt = null;
+
+    const PAGE_INFO = {
+      dashboard: ["Dashboard", "Overview duit, belanja, simpanan dan trading risk."],
+      budget: ["Budget Planner", "Kira bajet gaji mengikut plan yang sesuai."],
+      expense: ["Expense Tracker", "Rekod belanja harian supaya duit keluar boleh dipantau."],
+      trading: ["Trading Manager", "Kira risk setiap trade, max daily loss dan target profit."],
+      saving: ["Saving Goal", "Tetapkan target simpanan dan pantau progress."]
+    };
+
+    function formatRM(value) {
+      return "RM" + (Number(value) || 0).toFixed(2);
+    }
+
+    function formatUSD(value) {
+      const number = Number(value) || 0;
+      return "$" + Math.abs(number).toFixed(2);
+    }
+
+    function formatSignedUSD(value) {
+      const number = Number(value) || 0;
+      const sign = number > 0 ? "+" : number < 0 ? "-" : "";
+      return sign + "$" + Math.abs(number).toFixed(2);
+    }
+
+    function todayDate() {
+      return new Date().toISOString().split("T")[0];
+    }
+
+    function isFirebaseConfigReady() {
+      return firebaseConfig.apiKey &&
+        firebaseConfig.projectId &&
+        firebaseConfig.appId &&
+        firebaseConfig.apiKey !== "YOUR_API_KEY" &&
+        firebaseConfig.projectId !== "YOUR_PROJECT_ID" &&
+        firebaseConfig.appId !== "YOUR_APP_ID";
+    }
+
+    function updateDbStatus(text, type = "normal") {
+      const el = document.getElementById("dbStatus");
+      if (!el) return;
+      el.textContent = text;
+      if (type === "success") {
+        el.style.color = "#07563d";
+        el.style.background = "#e8f8f1";
+      } else if (type === "error") {
+        el.style.color = "#ef4444";
+        el.style.background = "#fff0f0";
+      }
+    }
+
+    function initPWA() {
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("./sw.js")
+          .then(() => console.log("MoneyFlow service worker registered"))
+          .catch(error => console.warn("Service worker registration failed:", error));
+      }
+    }
+
+    window.addEventListener("beforeinstallprompt", event => {
+      event.preventDefault();
+      deferredPrompt = event;
+      const installBtn = document.getElementById("installAppBtn");
+      if (installBtn) installBtn.style.display = "inline-block";
+    });
+
+    window.addEventListener("appinstalled", () => {
+      deferredPrompt = null;
+      const installBtn = document.getElementById("installAppBtn");
+      if (installBtn) installBtn.style.display = "none";
+      updateDbStatus("✅ App Installed", "success");
+    });
+
+    async function installPWA() {
+      if (!deferredPrompt) {
+        alert("Install belum tersedia. Pastikan website dibuka melalui HTTPS atau localhost, kemudian refresh page.");
+        return;
+      }
+
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+
+      const installBtn = document.getElementById("installAppBtn");
+      if (installBtn) installBtn.style.display = "none";
+    }
+
+    function getLocalData(key, fallback) {
+      const saved = localStorage.getItem(key);
+      if (!saved) return fallback;
+      try { return JSON.parse(saved); } catch { return fallback; }
+    }
+
+    function loadLocalCache() {
+      storeCache.budget = getLocalData("budget", DEFAULT_BUDGET);
+      storeCache.trading = getLocalData("trading", DEFAULT_TRADING);
+      storeCache.expenses = getLocalData("expenses", []);
+      storeCache.trades = getLocalData("trades", []);
+      storeCache.goal = getLocalData("goal", null);
+    }
+
+    function saveLocalData(key, value) {
+      localStorage.setItem(key, JSON.stringify(value));
+    }
+
+    function getData(key, fallback) {
+      if (storeCache[key] === undefined || storeCache[key] === null) return fallback;
+      return storeCache[key];
+    }
+
+    function setData(key, value) {
+      storeCache[key] = value;
+      saveLocalData(key, value);
+      saveFirebaseData(key, value);
+    }
+
+    async function initFirebaseDatabase() {
+      loadLocalCache();
+
+      if (!isFirebaseConfigReady()) {
+        updateDbStatus("🔥 Firebase: Setup Required", "error");
+        return;
+      }
+
+      try {
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+
+        db = firebase.firestore();
+        firebaseReady = true;
+        updateDbStatus("🔥 Firebase Connected", "success");
+
+        await loadFirebaseData();
+      } catch (error) {
+        console.error("Firebase connection error:", error);
+        firebaseReady = false;
+        updateDbStatus("⚠️ Firebase Error / Local Mode", "error");
+      }
+    }
+
+    function firebaseDoc(key) {
+      return db.collection("moneyflow_users").doc(USER_ID).collection("data").doc(key);
+    }
+
+    async function loadFirebaseData() {
+      if (!firebaseReady) return;
+
+      const keys = ["budget", "trading", "expenses", "trades", "goal"];
+
+      for (const key of keys) {
+        const docRef = firebaseDoc(key);
+        const snapshot = await docRef.get();
+
+        if (snapshot.exists) {
+          const data = snapshot.data();
+          storeCache[key] = data.value;
+          saveLocalData(key, data.value);
+        } else {
+          await saveFirebaseData(key, storeCache[key]);
+        }
+      }
+    }
+
+    async function saveFirebaseData(key, value) {
+      if (!firebaseReady) return;
+
+      try {
+        await firebaseDoc(key).set({
+          value,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+
+        updateDbStatus("🔥 Firebase Saved", "success");
+      } catch (error) {
+        console.error("Firebase save error:", error);
+        updateDbStatus("⚠️ Firebase Save Failed", "error");
+      }
+    }
+
+    function getPlanPercentages(planType) {
+      if (planType === "safe") return { needs: 60, savings: 20, wants: 15, trading: 5 };
+      if (planType === "balanced") return { needs: 50, savings: 20, wants: 20, trading: 10 };
+      return { needs: 45, savings: 15, wants: 20, trading: 20 };
+    }
+
+    function getBudgetAmounts() {
+      const budget = getData("budget", DEFAULT_BUDGET);
+      const percent = getPlanPercentages(budget.planType);
+      const income = Number(budget.income) || 0;
+      return {
+        income,
+        incomeType: budget.incomeType,
+        planType: budget.planType,
+        percent,
+        needs: income * percent.needs / 100,
+        savings: income * percent.savings / 100,
+        wants: income * percent.wants / 100,
+        trading: income * percent.trading / 100,
+        dailyIncome: budget.incomeType === "monthly" ? income / 30 : income / 7
+      };
+    }
+
+    function showPage(pageId, button) {
+      document.querySelectorAll(".page").forEach(page => page.classList.remove("active"));
+      document.querySelectorAll(".menu-item").forEach(btn => btn.classList.remove("active"));
+      document.getElementById(pageId).classList.add("active");
+      if (button) button.classList.add("active");
+      document.getElementById("pageTitle").textContent = PAGE_INFO[pageId][0];
+      document.getElementById("pageSubtitle").textContent = PAGE_INFO[pageId][1];
+      renderAll();
+    }
+
+    function goToExpense() {
+      const btn = Array.from(document.querySelectorAll(".menu-item")).find(b => b.textContent.includes("Expense Tracker"));
+      showPage("expense", btn);
+    }
+
+    function saveBudget() {
+      const income = Number(document.getElementById("income").value);
+      const incomeType = document.getElementById("incomeType").value;
+      const planType = document.getElementById("planType").value;
+      if (!income || income <= 0) {
+        document.getElementById("budgetResult").innerHTML = `<div class="warning">Sila masukkan income yang betul.</div>`;
+        return;
+      }
+      setData("budget", { income, incomeType, planType });
+      renderAll();
+    }
+
+    function resetBudgetOnly() {
+      setData("budget", DEFAULT_BUDGET);
+      loadInputs();
+      renderAll();
+    }
+
+    function renderBudget() {
+      const b = getBudgetAmounts();
+      const weeklyNeeds = b.incomeType === "monthly" ? b.needs / 4 : b.needs;
+      const weeklySavings = b.incomeType === "monthly" ? b.savings / 4 : b.savings;
+      const weeklyWants = b.incomeType === "monthly" ? b.wants / 4 : b.wants;
+      const weeklyTrading = b.incomeType === "monthly" ? b.trading / 4 : b.trading;
+
+      document.getElementById("budgetResult").innerHTML = `
+        <div class="notice">
+          Income ${b.incomeType === "monthly" ? "bulanan" : "mingguan"}: <strong>${formatRM(b.income)}</strong><br>
+          Anggaran bajet harian: <strong>${formatRM(b.dailyIncome)}</strong>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Kategori</th><th>Peratus</th><th>Jumlah</th><th>Seminggu</th></tr></thead>
+            <tbody>
+              <tr><td>Keperluan</td><td>${b.percent.needs}%</td><td>${formatRM(b.needs)}</td><td>${formatRM(weeklyNeeds)}</td></tr>
+              <tr><td>Simpanan</td><td>${b.percent.savings}%</td><td>${formatRM(b.savings)}</td><td>${formatRM(weeklySavings)}</td></tr>
+              <tr><td>Kehendak</td><td>${b.percent.wants}%</td><td>${formatRM(b.wants)}</td><td>${formatRM(weeklyWants)}</td></tr>
+              <tr><td>Trading</td><td>${b.percent.trading}%</td><td>${formatRM(b.trading)}</td><td>${formatRM(weeklyTrading)}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      renderBudgetChart(b, { weeklyNeeds, weeklySavings, weeklyWants, weeklyTrading });
+      renderCategoryDonut(b);
+    }
+
+    function renderBudgetChart(b, weekly) {
+      const categories = [
+        ["Needs", b.needs, weekly.weeklyNeeds],
+        ["Savings", b.savings, weekly.weeklySavings],
+        ["Wants", b.wants, weekly.weeklyWants],
+        ["Trading", b.trading, weekly.weeklyTrading]
+      ];
+      const max = Math.max(...categories.map(c => c[1]), 1);
+      document.getElementById("budgetBarChart").innerHTML = categories.map(c => {
+        const monthlyH = Math.max((c[1] / max) * 230, 12);
+        const weeklyH = Math.max((c[2] / max) * 230, 9);
+        return `
+          <div class="bar-group">
+            <div class="bar monthly" style="height:${monthlyH}px"></div>
+            <div class="bar weekly" style="height:${weeklyH}px"></div>
+            <div class="bar-label">${c[0]}</div>
+          </div>`;
+      }).join("");
+    }
+
+    function renderCategoryDonut(b) {
+      const total = b.income || 1;
+      const n = (b.needs / total) * 100;
+      const s = n + (b.savings / total) * 100;
+      const w = s + (b.wants / total) * 100;
+      document.getElementById("categoryDonut").style.background = `conic-gradient(var(--green) 0 ${n}%, var(--blue) ${n}% ${s}%, var(--orange) ${s}% ${w}%, var(--purple) ${w}% 100%)`;
+      document.getElementById("donutIncome").textContent = formatRM(b.income).replace(".00", "");
+      document.getElementById("categoryList").innerHTML = `
+        <div class="category-row"><span><span class="dot green"></span>Keperluan</span><span>${b.percent.needs}%</span></div>
+        <div class="category-row"><span><span class="dot blue"></span>Simpanan</span><span>${b.percent.savings}%</span></div>
+        <div class="category-row"><span><span class="dot orange"></span>Kehendak</span><span>${b.percent.wants}%</span></div>
+        <div class="category-row"><span><span class="dot purple"></span>Trading</span><span>${b.percent.trading}%</span></div>
+      `;
+    }
+
+    function addExpense() {
+      const date = document.getElementById("expenseDate").value || todayDate();
+      const category = document.getElementById("expenseCategory").value;
+      const note = document.getElementById("expenseNote").value.trim();
+      const amount = Number(document.getElementById("expenseAmount").value);
+      if (!amount || amount <= 0) {
+        alert("Sila masukkan jumlah belanja yang betul.");
+        return;
+      }
+      const expenses = getData("expenses", []);
+      expenses.unshift({ id: Date.now(), date, category, note: note || "-", amount });
+      setData("expenses", expenses);
+      document.getElementById("expenseNote").value = "";
+      document.getElementById("expenseAmount").value = "";
+      document.getElementById("expenseDate").value = todayDate();
+      renderAll();
+    }
+
+    function deleteExpense(id) {
+      setData("expenses", getData("expenses", []).filter(item => item.id !== id));
+      renderAll();
+    }
+
+    function clearExpenses() {
+      if (!confirm("Padam semua rekod belanja?")) return;
+      setData("expenses", []);
+      renderAll();
+    }
+
+    function getTotalExpenses() {
+      return getData("expenses", []).reduce((sum, item) => sum + Number(item.amount || 0), 0);
+    }
+
+    function renderExpenses() {
+      const expenses = getData("expenses", []);
+      const total = getTotalExpenses();
+      const b = getBudgetAmounts();
+      const balanceAfterPlan = b.income - total - b.savings - b.trading;
+
+      document.getElementById("expenseSummary").innerHTML = `
+        <div class="notice">
+          Total belanja: <strong>${formatRM(total)}</strong><br>
+          Baki selepas asing simpanan/trading: <strong>${formatRM(balanceAfterPlan)}</strong>
+        </div>`;
+
+      if (expenses.length === 0) {
+        document.getElementById("expenseList").innerHTML = `<p class="muted">Belum ada rekod belanja.</p>`;
+        document.getElementById("dashboardRecentExpense").innerHTML = `<p class="muted">Belum ada rekod belanja.</p>`;
+        return;
+      }
+
+      const rows = expenses.map(item => `
+        <tr>
+          <td>${item.date}</td>
+          <td>${item.category}</td>
+          <td>${item.note}</td>
+          <td>${formatRM(item.amount)}</td>
+          <td><button class="mini-btn" onclick="deleteExpense(${item.id})">Padam</button></td>
+        </tr>`).join("");
+
+      document.getElementById("expenseList").innerHTML = `<div class="table-wrap"><table><thead><tr><th>Tarikh</th><th>Kategori</th><th>Catatan</th><th>Jumlah</th><th>Action</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+
+      const recentRows = expenses.slice(0, 5).map(item => `
+        <tr><td>${item.date}</td><td>${item.category}</td><td>${item.note}</td><td>${formatRM(item.amount)}</td></tr>`).join("");
+
+      document.getElementById("dashboardRecentExpense").innerHTML = `<div class="table-wrap"><table><thead><tr><th>Tarikh</th><th>Kategori</th><th>Catatan</th><th>Jumlah</th></tr></thead><tbody>${recentRows}</tbody></table></div>`;
+    }
+
+    function saveTrading() {
+      const capital = Number(document.getElementById("capital").value);
+      const riskPercent = Number(document.getElementById("riskPercent").value);
+      const maxTrade = Number(document.getElementById("maxTrade").value);
+      if (!capital || capital <= 0) {
+        document.getElementById("tradingResult").innerHTML = `<div class="warning">Sila masukkan modal trading yang betul.</div>`;
+        return;
+      }
+      if (!maxTrade || maxTrade <= 0) {
+        document.getElementById("tradingResult").innerHTML = `<div class="warning">Sila masukkan maximum trade sehari.</div>`;
+        return;
+      }
+      setData("trading", { capital, riskPercent, maxTrade });
+      renderAll();
+    }
+
+    function renderTrading() {
+      const t = getData("trading", DEFAULT_TRADING);
+      const capital = Number(t.capital) || 0;
+      const riskPercent = Number(t.riskPercent) || 1;
+      const maxTrade = Number(t.maxTrade) || 1;
+      const riskPerTrade = capital * riskPercent / 100;
+      const maxDailyLoss = riskPerTrade * maxTrade;
+      const maxWeeklyLoss = capital * 0.06;
+      const targetProfit = riskPerTrade * 2;
+      const note = riskPercent >= 3 ? "Risk agak tinggi. Untuk modal kecil, lebih selamat guna 1%." : "Risk masih terkawal. Kekalkan disiplin dan jangan revenge trade.";
+
+      const html = `
+        <div class="notice">
+          Modal trading: <strong>${formatUSD(capital)}</strong><br>
+          Risk setiap trade: <strong>${riskPercent}%</strong><br>
+          Maksimum rugi setiap trade: <strong>${formatUSD(riskPerTrade)}</strong>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Perkara</th><th>Jumlah</th></tr></thead>
+            <tbody>
+              <tr><td>Max Trade Sehari</td><td>${maxTrade} trade</td></tr>
+              <tr><td>Max Rugi Sehari</td><td>${formatUSD(maxDailyLoss)}</td></tr>
+              <tr><td>Max Rugi Seminggu</td><td>${formatUSD(maxWeeklyLoss)}</td></tr>
+              <tr><td>Target Profit 1:2</td><td>${formatUSD(targetProfit)}</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="warning">${note}<br>Stop trading kalau rugi 3 kali berturut-turut.</div>`;
+
+      document.getElementById("tradingResult").innerHTML = html;
+      document.getElementById("dashboardTrading").innerHTML = html;
+    }
+
+    function calculateTradePL(marketType, direction, entryPrice, exitPrice, lotSize) {
+      const priceMove = direction === "Buy" ? exitPrice - entryPrice : entryPrice - exitPrice;
+      if (marketType === "xauusd") return priceMove * lotSize * 100;
+      if (marketType === "forex") return priceMove * 10000 * lotSize * 10;
+      return priceMove * lotSize;
+    }
+
+    function getMoveDisplay(marketType, direction, entryPrice, exitPrice) {
+      const priceMove = direction === "Buy" ? exitPrice - entryPrice : entryPrice - exitPrice;
+      if (marketType === "forex") return (priceMove * 10000).toFixed(1) + " pips";
+      return priceMove.toFixed(2) + " points";
+    }
+
+    function addTrade() {
+      const date = document.getElementById("tradeDate").value || todayDate();
+      const marketType = document.getElementById("marketType").value;
+      const pair = document.getElementById("tradePair").value.trim() || "XAUUSD";
+      const direction = document.getElementById("tradeDirection").value;
+      const entryPrice = Number(document.getElementById("entryPrice").value);
+      const exitPrice = Number(document.getElementById("exitPrice").value);
+      const lotSize = Number(document.getElementById("lotSize").value);
+
+      if (!entryPrice || !exitPrice || !lotSize || entryPrice <= 0 || exitPrice <= 0 || lotSize <= 0) {
+        alert("Sila masukkan entry price, exit price dan lot size yang betul.");
+        return;
+      }
+
+      const profitLoss = calculateTradePL(marketType, direction, entryPrice, exitPrice, lotSize);
+      const move = getMoveDisplay(marketType, direction, entryPrice, exitPrice);
+      const trades = getData("trades", []);
+
+      trades.unshift({
+        id: Date.now(),
+        date,
+        marketType,
+        pair: pair.toUpperCase(),
+        direction,
+        entryPrice,
+        exitPrice,
+        lotSize,
+        move,
+        profitLoss
+      });
+
+      setData("trades", trades);
+      document.getElementById("entryPrice").value = "";
+      document.getElementById("exitPrice").value = "";
+      document.getElementById("lotSize").value = "";
+      document.getElementById("tradeDate").value = todayDate();
+      renderAll();
+    }
+
+    function deleteTrade(id) {
+      setData("trades", getData("trades", []).filter(trade => trade.id !== id));
+      renderAll();
+    }
+
+    function clearTrades() {
+      if (!confirm("Padam semua rekod trade?")) return;
+      setData("trades", []);
+      renderAll();
+    }
+
+    function getTradeStats() {
+      const trades = getData("trades", []);
+      const totalProfit = trades.filter(t => t.profitLoss > 0).reduce((sum, t) => sum + t.profitLoss, 0);
+      const totalLoss = trades.filter(t => t.profitLoss < 0).reduce((sum, t) => sum + Math.abs(t.profitLoss), 0);
+      const net = totalProfit - totalLoss;
+      const wins = trades.filter(t => t.profitLoss > 0).length;
+      const losses = trades.filter(t => t.profitLoss < 0).length;
+      const winRate = trades.length > 0 ? (wins / trades.length) * 100 : 0;
+      return { trades, totalProfit, totalLoss, net, wins, losses, winRate };
+    }
+
+    function renderTradeProfit() {
+      const stats = getTradeStats();
+      const netClass = stats.net >= 0 ? "color-green" : "color-red";
+
+      document.getElementById("tradeSummary").innerHTML = `
+        <div class="trade-result-card">
+          <div class="trade-mini-card"><span>Total Profit</span><strong class="color-green">${formatUSD(stats.totalProfit)}</strong></div>
+          <div class="trade-mini-card"><span>Total Loss</span><strong class="color-red">${formatUSD(stats.totalLoss)}</strong></div>
+          <div class="trade-mini-card"><span>Net P/L</span><strong class="${netClass}">${formatSignedUSD(stats.net)}</strong></div>
+          <div class="trade-mini-card"><span>Win Rate</span><strong>${stats.winRate.toFixed(1)}%</strong></div>
+        </div>
+        <div class="notice">
+          Total trade: <strong>${stats.trades.length}</strong> | Win: <strong>${stats.wins}</strong> | Loss: <strong>${stats.losses}</strong>
+        </div>
+      `;
+
+      if (stats.trades.length === 0) {
+        document.getElementById("tradeList").innerHTML = `<p class="muted">Belum ada rekod trade.</p>`;
+        return;
+      }
+
+      const rows = stats.trades.map(trade => {
+        const resultClass = trade.profitLoss >= 0 ? "color-green" : "color-red";
+        const badge = trade.profitLoss >= 0 ? "profit-badge" : "loss-badge";
+        const status = trade.profitLoss >= 0 ? "Profit" : "Loss";
+        return `
+          <tr>
+            <td>${trade.date}</td>
+            <td>${trade.pair}</td>
+            <td>${trade.direction}</td>
+            <td>${trade.marketType.toUpperCase()}</td>
+            <td>${trade.entryPrice}</td>
+            <td>${trade.exitPrice}</td>
+            <td>${trade.lotSize}</td>
+            <td>${trade.move}</td>
+            <td><span class="${badge}">${status}</span></td>
+            <td class="${resultClass}"><strong>${formatSignedUSD(trade.profitLoss)}</strong></td>
+            <td><button class="mini-btn" onclick="deleteTrade(${trade.id})">Padam</button></td>
+          </tr>`;
+      }).join("");
+
+      document.getElementById("tradeList").innerHTML = `
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Tarikh</th><th>Pair</th><th>Type</th><th>Market</th><th>Entry</th><th>Exit</th><th>Lot</th><th>Move</th><th>Status</th><th>P/L USD</th><th>Action</th></tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>`;
+    }
+
+    function saveGoal() {
+      const name = document.getElementById("goalName").value.trim();
+      const target = Number(document.getElementById("goalTarget").value);
+      const current = Number(document.getElementById("goalCurrent").value);
+      if (!name) {
+        document.getElementById("goalResult").innerHTML = `<div class="warning">Sila masukkan nama target.</div>`;
+        return;
+      }
+      if (!target || target <= 0) {
+        document.getElementById("goalResult").innerHTML = `<div class="warning">Sila masukkan target simpanan yang betul.</div>`;
+        return;
+      }
+      setData("goal", { name, target, current });
+      renderAll();
+    }
+
+    function renderGoal() {
+      const goal = getData("goal", null);
+      if (!goal) {
+        document.getElementById("goalResult").innerHTML = `<p class="muted">Masukkan saving goal untuk lihat progress.</p>`;
+        return;
+      }
+      const target = Number(goal.target) || 0;
+      const current = Number(goal.current) || 0;
+      const percent = target > 0 ? Math.min((current / target) * 100, 100) : 0;
+      const balance = Math.max(target - current, 0);
+      document.getElementById("goalResult").innerHTML = `
+        <div class="notice">
+          Target: <strong>${goal.name}</strong><br>
+          Simpanan sekarang: <strong>${formatRM(current)}</strong><br>
+          Target penuh: <strong>${formatRM(target)}</strong><br>
+          Baki lagi: <strong>${formatRM(balance)}</strong>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${percent}%"></div></div>
+        <p class="muted">Progress: ${percent.toFixed(1)}%</p>`;
+    }
+
+    function renderDashboard() {
+      const b = getBudgetAmounts();
+      const totalExpense = getTotalExpenses();
+      const balance = b.income - totalExpense - b.savings - b.trading;
+      document.getElementById("dashIncome").textContent = formatRM(b.income);
+      document.getElementById("dashExpense").textContent = formatRM(totalExpense);
+      document.getElementById("dashSaving").textContent = formatRM(b.savings);
+      document.getElementById("dashBalance").textContent = formatRM(balance);
+      document.getElementById("dashBalance").className = balance < 0 ? "stat-value color-red" : "stat-value color-purple";
+
+      const tradeStats = getTradeStats();
+      const plElement = document.getElementById("dashTradingPL");
+      const statusElement = document.getElementById("dashTradingStatus");
+      plElement.textContent = formatSignedUSD(tradeStats.net);
+      plElement.className = tradeStats.net >= 0 ? "stat-value color-green" : "stat-value color-red";
+      statusElement.textContent = tradeStats.net >= 0 ? "Profit" : "Loss";
+      statusElement.className = tradeStats.net >= 0 ? "stat-change" : "stat-change bad";
+    }
+
+    function loadInputs() {
+      const b = getData("budget", DEFAULT_BUDGET);
+      const t = getData("trading", DEFAULT_TRADING);
+      const goal = getData("goal", null);
+      document.getElementById("income").value = b.income;
+      document.getElementById("incomeType").value = b.incomeType;
+      document.getElementById("planType").value = b.planType;
+      document.getElementById("capital").value = t.capital;
+      document.getElementById("riskPercent").value = t.riskPercent;
+      document.getElementById("maxTrade").value = t.maxTrade;
+      document.getElementById("expenseDate").value = todayDate();
+      document.getElementById("tradeDate").value = todayDate();
+      if (goal) {
+        document.getElementById("goalName").value = goal.name;
+        document.getElementById("goalTarget").value = goal.target;
+        document.getElementById("goalCurrent").value = goal.current;
+      }
+    }
+
+    function renderAll() {
+      renderBudget();
+      renderExpenses();
+      renderTrading();
+      renderTradeProfit();
+      renderGoal();
+      renderDashboard();
+    }
+
+    window.onload = async function () {
+      initPWA();
+      await initFirebaseDatabase();
+      loadInputs();
+      renderAll();
+    };
+  </script>
+</body>
+</html>
