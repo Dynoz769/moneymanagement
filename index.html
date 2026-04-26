@@ -710,6 +710,58 @@
       transition: 0.3s;
     }
 
+    .goal-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .goal-card {
+      background: #f8fbf9;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      padding: 18px;
+    }
+
+    .goal-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .goal-card h3 {
+      font-size: 17px;
+      color: var(--green-dark);
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    .goal-card p {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.5;
+    }
+
+    .goal-actions {
+      display: grid;
+      grid-template-columns: 1fr 90px 90px;
+      gap: 10px;
+      margin-top: 14px;
+      align-items: center;
+    }
+
+    .goal-actions input {
+      margin-bottom: 0;
+    }
+
+    .goal-actions button {
+      width: 100%;
+      padding: 12px;
+    }
+
     .color-red { color: var(--red) !important; }
     .color-blue { color: var(--blue) !important; }
     .color-green { color: var(--green) !important; }
@@ -792,7 +844,8 @@
       .main-grid,
       .bottom-grid,
       .form-grid,
-      .trade-result-card {
+      .trade-result-card,
+      .goal-grid {
         grid-template-columns: 1fr;
       }
     }
@@ -1111,22 +1164,28 @@
       <section id="saving" class="page">
         <div class="form-grid">
           <div class="form-card">
-            <h2>Saving Goal</h2>
-            <label for="goalName">Nama Target</label>
+            <h2>Create Saving Goal</h2>
+            <label for="goalName">Nama Saving</label>
             <input type="text" id="goalName" placeholder="Contoh: Emergency Fund" />
 
             <label for="goalTarget">Target Simpanan (RM)</label>
             <input type="number" id="goalTarget" placeholder="Contoh: 500" />
 
-            <label for="goalCurrent">Simpanan Sekarang (RM)</label>
+            <label for="goalCurrent">Baki Sekarang (RM)</label>
             <input type="number" id="goalCurrent" placeholder="Contoh: 50" />
 
-            <button class="btn btn-primary" style="width:100%;" onclick="saveGoal()">Simpan Goal</button>
+            <button class="btn btn-primary" style="width:100%;" onclick="saveGoal()">Tambah Saving Goal</button>
+            <div class="notice">Lepas tambah saving goal, nama dan progress akan kekal dalam sistem. Kau boleh tambah atau tolak baki bila-bila masa.</div>
           </div>
 
           <div class="form-card">
-            <h2>Progress Simpanan</h2>
-            <div id="goalResult" class="muted">Masukkan saving goal untuk lihat progress.</div>
+            <h2>Saving Summary</h2>
+            <div id="goalResult" class="muted">Belum ada saving goal.</div>
+          </div>
+
+          <div class="form-card" style="grid-column:1 / -1;">
+            <h2>Saving Goal Progress</h2>
+            <div id="goalList" class="muted">Belum ada saving goal.</div>
           </div>
         </div>
       </section>
@@ -1160,7 +1219,7 @@
       trading: DEFAULT_TRADING,
       expenses: [],
       trades: [],
-      goal: null
+      goals: []
     };
 
     let deferredPrompt = null;
@@ -1312,7 +1371,7 @@
     async function loadFirebaseData() {
       if (!firebaseReady) return;
 
-      const keys = ["budget", "trading", "expenses", "trades", "goal"];
+      const keys = ["budget", "trading", "expenses", "trades", "goals"];
 
       for (const key of keys) {
         const snapshot = await firebaseRef(key).once("value");
@@ -1709,38 +1768,134 @@
     function saveGoal() {
       const name = document.getElementById("goalName").value.trim();
       const target = Number(document.getElementById("goalTarget").value);
-      const current = Number(document.getElementById("goalCurrent").value);
+      const current = Number(document.getElementById("goalCurrent").value) || 0;
+
       if (!name) {
-        document.getElementById("goalResult").innerHTML = `<div class="warning">Sila masukkan nama target.</div>`;
+        document.getElementById("goalResult").innerHTML = `<div class="warning">Sila masukkan nama saving.</div>`;
         return;
       }
+
       if (!target || target <= 0) {
         document.getElementById("goalResult").innerHTML = `<div class="warning">Sila masukkan target simpanan yang betul.</div>`;
         return;
       }
-      setData("goal", { name, target, current });
+
+      if (current < 0) {
+        document.getElementById("goalResult").innerHTML = `<div class="warning">Baki sekarang tidak boleh negatif.</div>`;
+        return;
+      }
+
+      const goals = getData("goals", []);
+      goals.unshift({
+        id: Date.now(),
+        name,
+        target,
+        current,
+        createdAt: new Date().toISOString()
+      });
+
+      setData("goals", goals);
+
+      document.getElementById("goalName").value = "";
+      document.getElementById("goalTarget").value = "";
+      document.getElementById("goalCurrent").value = "";
+
+      renderAll();
+    }
+
+    function updateGoalAmount(id, action) {
+      const amountInput = document.getElementById(`goalAmount-${id}`);
+      const amount = Number(amountInput.value);
+
+      if (!amount || amount <= 0) {
+        alert("Masukkan jumlah yang betul untuk tambah atau tolak baki.");
+        return;
+      }
+
+      const goals = getData("goals", []).map(goal => {
+        if (goal.id !== id) return goal;
+
+        const current = Number(goal.current) || 0;
+        const updatedAmount = action === "add"
+          ? current + amount
+          : Math.max(current - amount, 0);
+
+        return {
+          ...goal,
+          current: updatedAmount,
+          updatedAt: new Date().toISOString()
+        };
+      });
+
+      setData("goals", goals);
+      amountInput.value = "";
+      renderAll();
+    }
+
+    function deleteGoal(id) {
+      if (!confirm("Padam saving goal ini?")) return;
+      const goals = getData("goals", []).filter(goal => goal.id !== id);
+      setData("goals", goals);
       renderAll();
     }
 
     function renderGoal() {
-      const goal = getData("goal", null);
-      if (!goal) {
-        document.getElementById("goalResult").innerHTML = `<p class="muted">Masukkan saving goal untuk lihat progress.</p>`;
+      const goals = getData("goals", []);
+
+      if (!goals.length) {
+        document.getElementById("goalResult").innerHTML = `<p class="muted">Belum ada saving goal.</p>`;
+        document.getElementById("goalList").innerHTML = `<p class="muted">Belum ada saving goal.</p>`;
         return;
       }
-      const target = Number(goal.target) || 0;
-      const current = Number(goal.current) || 0;
-      const percent = target > 0 ? Math.min((current / target) * 100, 100) : 0;
-      const balance = Math.max(target - current, 0);
+
+      const totalTarget = goals.reduce((sum, goal) => sum + Number(goal.target || 0), 0);
+      const totalCurrent = goals.reduce((sum, goal) => sum + Number(goal.current || 0), 0);
+      const overallProgress = totalTarget > 0 ? Math.min((totalCurrent / totalTarget) * 100, 100) : 0;
+      const totalBalance = Math.max(totalTarget - totalCurrent, 0);
+
       document.getElementById("goalResult").innerHTML = `
         <div class="notice">
-          Target: <strong>${goal.name}</strong><br>
-          Simpanan sekarang: <strong>${formatRM(current)}</strong><br>
-          Target penuh: <strong>${formatRM(target)}</strong><br>
-          Baki lagi: <strong>${formatRM(balance)}</strong>
+          Total saving goal: <strong>${goals.length}</strong><br>
+          Jumlah terkumpul: <strong>${formatRM(totalCurrent)}</strong><br>
+          Jumlah target: <strong>${formatRM(totalTarget)}</strong><br>
+          Baki lagi: <strong>${formatRM(totalBalance)}</strong>
         </div>
-        <div class="progress-bar"><div class="progress-fill" style="width:${percent}%"></div></div>
-        <p class="muted">Progress: ${percent.toFixed(1)}%</p>`;
+        <div class="progress-bar"><div class="progress-fill" style="width:${overallProgress}%"></div></div>
+        <p class="muted">Overall progress: ${overallProgress.toFixed(1)}%</p>
+      `;
+
+      document.getElementById("goalList").innerHTML = `
+        <div class="goal-grid">
+          ${goals.map(goal => {
+            const target = Number(goal.target) || 0;
+            const current = Number(goal.current) || 0;
+            const progress = target > 0 ? Math.min((current / target) * 100, 100) : 0;
+            const balance = Math.max(target - current, 0);
+
+            return `
+              <div class="goal-card">
+                <div class="goal-card-head">
+                  <div>
+                    <h3>${goal.name}</h3>
+                    <p>Current: <strong>${formatRM(current)}</strong> / Target: <strong>${formatRM(target)}</strong></p>
+                    <p>Baki lagi: <strong>${formatRM(balance)}</strong></p>
+                  </div>
+                  <button class="mini-btn" onclick="deleteGoal(${goal.id})">Padam</button>
+                </div>
+
+                <div class="progress-bar"><div class="progress-fill" style="width:${progress}%"></div></div>
+                <p>Progress: ${progress.toFixed(1)}%</p>
+
+                <div class="goal-actions">
+                  <input type="number" id="goalAmount-${goal.id}" placeholder="Jumlah RM" />
+                  <button class="btn btn-primary" onclick="updateGoalAmount(${goal.id}, 'add')">+ Add</button>
+                  <button class="btn btn-secondary" onclick="updateGoalAmount(${goal.id}, 'subtract')">- Tolak</button>
+                </div>
+              </div>
+            `;
+          }).join("")}
+        </div>
+      `;
     }
 
     function renderDashboard() {
@@ -1765,7 +1920,6 @@
     function loadInputs() {
       const b = getData("budget", DEFAULT_BUDGET);
       const t = getData("trading", DEFAULT_TRADING);
-      const goal = getData("goal", null);
       document.getElementById("income").value = b.income;
       document.getElementById("incomeType").value = b.incomeType;
       document.getElementById("planType").value = b.planType;
@@ -1774,11 +1928,6 @@
       document.getElementById("maxTrade").value = t.maxTrade;
       document.getElementById("expenseDate").value = todayDate();
       document.getElementById("tradeDate").value = todayDate();
-      if (goal) {
-        document.getElementById("goalName").value = goal.name;
-        document.getElementById("goalTarget").value = goal.target;
-        document.getElementById("goalCurrent").value = goal.current;
-      }
     }
 
     function renderAll() {
