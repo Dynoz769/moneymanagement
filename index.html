@@ -1134,12 +1134,13 @@
   </div>
 
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyCgU1KlqKh55IQKSnk-PpvafiEZkkIOK7A",
       authDomain: "oneymanagement-ca1f9.firebaseapp.com",
+      databaseURL: "https://oneymanagement-ca1f9-default-rtdb.asia-southeast1.firebasedatabase.app",
       projectId: "oneymanagement-ca1f9",
       storageBucket: "oneymanagement-ca1f9.firebasestorage.app",
       messagingSenderId: "975231245856",
@@ -1195,6 +1196,7 @@
       return firebaseConfig.apiKey &&
         firebaseConfig.projectId &&
         firebaseConfig.appId &&
+        firebaseConfig.databaseURL &&
         firebaseConfig.apiKey !== "YOUR_API_KEY" &&
         firebaseConfig.projectId !== "YOUR_PROJECT_ID" &&
         firebaseConfig.appId !== "YOUR_APP_ID";
@@ -1291,20 +1293,20 @@
           firebase.initializeApp(firebaseConfig);
         }
 
-        db = firebase.firestore();
+        db = firebase.database();
         firebaseReady = true;
-        updateDbStatus("🔥 Firebase Connected", "success");
+        updateDbStatus("🔥 Realtime Database Connected", "success");
 
         await loadFirebaseData();
       } catch (error) {
-        console.error("Firebase connection error:", error);
+        console.error("Firebase Realtime Database connection error:", error);
         firebaseReady = false;
-        updateDbStatus("⚠️ Firebase Error / Local Mode", "error");
+        updateDbStatus("⚠️ Realtime DB Error / Local Mode", "error");
       }
     }
 
-    function firebaseDoc(key) {
-      return db.collection("moneyflow_users").doc(USER_ID).collection("data").doc(key);
+    function firebaseRef(key) {
+      return db.ref(`moneyflow_users/${USER_ID}/data/${key}`);
     }
 
     async function loadFirebaseData() {
@@ -1313,13 +1315,11 @@
       const keys = ["budget", "trading", "expenses", "trades", "goal"];
 
       for (const key of keys) {
-        const docRef = firebaseDoc(key);
-        const snapshot = await docRef.get();
+        const snapshot = await firebaseRef(key).once("value");
 
-        if (snapshot.exists) {
-          const data = snapshot.data();
-          storeCache[key] = data.value;
-          saveLocalData(key, data.value);
+        if (snapshot.exists()) {
+          storeCache[key] = snapshot.val().value;
+          saveLocalData(key, snapshot.val().value);
         } else {
           await saveFirebaseData(key, storeCache[key]);
         }
@@ -1330,15 +1330,15 @@
       if (!firebaseReady) return;
 
       try {
-        await firebaseDoc(key).set({
+        await firebaseRef(key).set({
           value,
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
+          updatedAt: new Date().toISOString()
+        });
 
-        updateDbStatus("🔥 Firebase Saved", "success");
+        updateDbStatus("🔥 Realtime Database Saved", "success");
       } catch (error) {
-        console.error("Firebase save error:", error);
-        updateDbStatus("⚠️ Firebase Save Failed", "error");
+        console.error("Firebase Realtime Database save error:", error);
+        updateDbStatus("⚠️ Realtime DB Save Failed", "error");
       }
     }
 
